@@ -12,14 +12,14 @@ pipeline {
 
   stages {
 
-    stage('Build Artifact') {
+    stage('Build Artifact - Maven') {
       steps {
         sh "mvn clean package -DskipTests=true"
         archive 'target/*.jar'
       }
     }
 
-    stage('Unit Tests - JUnit and Jacoco') {
+    stage('Unit Tests - JUnit and JaCoCo') {
       steps {
         sh "mvn test"
       }
@@ -35,8 +35,8 @@ pipeline {
       steps {
         withSonarQubeEnv('SonarQube') {
           sh "mvn sonar:sonar \
-              -Dsonar.projectKey=numeric-application \
-              -Dsonar.host.url=http://devsecops-demo.eastus.cloudapp.azure.com:9000"
+		              -Dsonar.projectKey=numeric-application \
+		              -Dsonar.host.url=http://devsecops-demo.eastus.cloudapp.azure.com:9000"
         }
         timeout(time: 2, unit: 'MINUTES') {
           script {
@@ -46,7 +46,7 @@ pipeline {
       }
     }
 
-    stage('Vulnerability Scan - Docker ') {
+    stage('Vulnerability Scan - Docker') {
       steps {
         parallel(
           "Dependency Scan": {
@@ -72,12 +72,6 @@ pipeline {
       }
     }
 
-    // stage('Vulnerability Scan - Kubernetes') {
-    //   steps {
-    //     sh 'docker run --rm -v $(pwd):/project openpolicyagent/conftest test --policy opa-k8s-security.rego k8s_deployment_service.yaml'
-    //   }
-    // }
-
     stage('Vulnerability Scan - Kubernetes') {
       steps {
         parallel(
@@ -93,15 +87,6 @@ pipeline {
         )
       }
     }
-
-    // stage('Kubernetes Deployment - DEV') {
-    //   steps {
-    //     withKubeConfig([credentialsId: "kubeconfig"]) {
-    //       sh "sed -i 's#replace#ansonye/numeric-app:${GIT_COMMIT}#g' k8s_deployment_service.yaml"
-    //       sh "kubectl apply -f k8s_deployment_service.yaml"
-    //     }
-    //   }
-    // }
 
     stage('K8S Deployment - DEV') {
       steps {
