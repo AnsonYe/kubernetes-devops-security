@@ -158,6 +158,23 @@ pipeline {
       }
     }
 
+    stage('Integration Tests - PROD') {
+      steps {
+        script {
+          try {
+            withKubeConfig([credentialsId: 'kubeconfig']) {
+              sh "bash integration-test-PROD.sh"
+            }
+          } catch (e) {
+            withKubeConfig([credentialsId: 'kubeconfig']) {
+              sh "kubectl -n prod rollout undo deploy ${deploymentName}"
+            }
+            throw e
+          }
+        }
+      }
+    }
+
     // stage('Testing Slack') {
     //   steps {
     //     sh 'exit 0'
@@ -178,9 +195,14 @@ pipeline {
       sendNotification currentBuild.result
     }
 
-    // success {
-
-    // }
+    success {
+      script {
+        /* Use slackNotifier.groovy from shared library and provide current build result as parameter */
+        env.failedStage = "none"
+        env.emoji = ":white_check_mark: :tada: :thumbsup_all:"
+        sendNotification currentBuild.result
+      }
+    }
 
     // failure {
 
